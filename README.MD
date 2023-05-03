@@ -1,6 +1,6 @@
 # Streamlit Demo: COVID19 dashboard
 
-A [Streamlit](https://streamlit.io) dashboard for stock prices prediction provided by [Yahoo Finance](https://finance.yahoo.com/) with [Prophet](https://facebook.github.io/prophet/).
+"Information Systems and Business Intelligence" laboratory session repo: a [Streamlit](https://streamlit.io) dashboard for stock prices prediction provided by [Yahoo Finance](https://finance.yahoo.com/) with [Prophet](https://facebook.github.io/prophet/).
 
 ## How to run it
 
