@@ -1,6 +1,4 @@
 # Library import
-import datetime as dt
-import pandas as pd
 import plotly.express as px
 import streamlit as st
 import yfinance as yf
@@ -56,8 +54,6 @@ changepoint_scale_selection = st.sidebar.slider('Changepoint prior scale (trend 
 seasonality_scale_selection = st.sidebar.slider('Seasonality prior scale (seasonality flexibility)', min_value=0.1, max_value=5.0, value=1.0)
 
 # Ticker information
-logo_url = ticker_data.info['logo_url']
-st.image(logo_url)
 company_name = ticker_data.info['longName']
 st.header(company_name)
 company_summary = ticker_data.info['longBusinessSummary']
