@@ -29,6 +29,11 @@ ticker_df['Date'] = ticker_df['Date'].dt.date
 st.sidebar.subheader('Prophet parameters configuration')
 horizon_selection = st.sidebar.slider('Forecasting horizon (days)', min_value=1, max_value=365, value=90)
 growth_selection = st.sidebar.radio(label='Growth', options=['linear', 'logistic'])
+if growth_selection == 'logistic':
+    st.sidebar.info('Configure logistic growth saturation as a percentage of latest Close')
+    cap = st.sidebar.slider('Constant carrying capacity', min_value=1.0, max_value=1.5, value=1.2)
+    cap_close = cap*ticker_df['Close'].iloc[-1]
+    ticker_df['cap']=cap_close
 seasonality_selection = st.sidebar.radio(label='Seasonality', options=['additive', 'multiplicative'])
 with st.sidebar.expander('Seasonality components'):
     weekly_selection = st.checkbox('Weekly')
@@ -69,6 +74,8 @@ with st.spinner('Model fitting..'):
 # Prophet model forecasting
 with st.spinner('Making predictions..'):
     future = model.make_future_dataframe(periods=horizon_selection, freq='D')
+    if growth_selection == 'logistic':
+        future['cap'] = cap_close
     forecast = model.predict(future)
 
 # Prophet forecast plot
