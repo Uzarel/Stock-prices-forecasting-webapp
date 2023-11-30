@@ -29,29 +29,15 @@ ticker_df['Date'] = ticker_df['Date'].dt.date
 st.sidebar.subheader('Prophet parameters configuration')
 horizon_selection = st.sidebar.slider('Forecasting horizon (days)', min_value=1, max_value=365, value=90)
 growth_selection = st.sidebar.radio(label='Growth', options=['linear', 'logistic'])
-if growth_selection == 'logistic':
-    st.sidebar.info('Configure logistic growth saturation')
-    floor = st.sidebar.slider('Floor (Close min percentage)', min_value=0.8, max_value=1.2)
-    cap = st.sidebar.slider('Cap (Close max percentage)', min_value=0.8, max_value=1.2, value=1.2)
-    floor_close = floor*min(ticker_df['Close'])
-    cap_close = cap*max(ticker_df['Close'])
-    if floor_close >= cap_close:
-        st.sidebar.error('Cap must be higher than floor, switching to linear growth instead')
-        growth_selection = 'linear'
-    else:
-        ticker_df['floor']=floor_close
-        ticker_df['cap']=cap_close
 seasonality_selection = st.sidebar.radio(label='Seasonality', options=['additive', 'multiplicative'])
 with st.sidebar.expander('Seasonality components'):
-    weekly_selection = st.checkbox('Weekly', value=True)
-    monthly_selection = st.checkbox('Monthly')
+    weekly_selection = st.checkbox('Weekly')
+    monthly_selection = st.checkbox('Monthly', value=True)
     yearly_selection = st.checkbox('Yearly', value=True)
 with open('holiday_countries.txt', 'r') as fp:
     holiday_country_list = fp.read().split('\n')
     holiday_country_list.insert(0, 'None')
 holiday_country_selection = st.sidebar.selectbox(label="Holiday country", options=holiday_country_list)
-changepoint_scale_selection = st.sidebar.slider('Changepoint prior scale (trend flexibility)', min_value=0.01, max_value=0.5, value=0.05)
-seasonality_scale_selection = st.sidebar.slider('Seasonality prior scale (seasonality flexibility)', min_value=0.1, max_value=5.0, value=1.0)
 
 # Ticker information
 company_name = ticker_data.info['longName']
@@ -73,7 +59,6 @@ with st.spinner('Model fitting..'):
         weekly_seasonality=weekly_selection,
         yearly_seasonality=yearly_selection,
         growth=growth_selection,
-        changepoint_prior_scale=changepoint_scale_selection
         )
     if holiday_country_selection != 'None':
         model.add_country_holidays(country_name=holiday_country_selection)      
@@ -84,9 +69,6 @@ with st.spinner('Model fitting..'):
 # Prophet model forecasting
 with st.spinner('Making predictions..'):
     future = model.make_future_dataframe(periods=horizon_selection, freq='D')
-    if growth_selection == 'logistic':
-        future['floor'] = floor_close
-        future['cap'] = cap_close
     forecast = model.predict(future)
 
 # Prophet forecast plot
