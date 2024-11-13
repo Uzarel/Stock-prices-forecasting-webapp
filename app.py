@@ -1,10 +1,10 @@
 # Library import
+import holidays
 import plotly.express as px
+import requests
 import streamlit as st
 import yfinance as yf
 from prophet import Prophet
-import requests
-import holidays
 
 # Page configuration
 st.set_page_config(
