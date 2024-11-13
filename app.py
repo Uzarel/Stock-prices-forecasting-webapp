@@ -13,6 +13,19 @@ st.set_page_config(page_title="Stock Dashboard", page_icon=":money_with_wings:")
 st.title("Stock Prices Forecasting")
 
 
+# Helper function to get ticker list with caching
+@st.cache_data
+def get_ticker_list():
+    response = requests.get(
+        "https://dumbstockapi.com/stock?format=tickers-only&countries=US"
+    )
+    if response.status_code == 200:
+        return response.json()
+    else:
+        st.error("Error fetching ticker list.")
+        return ["AAPL"]
+
+
 # Helper function to fetch ticker data with caching
 @st.cache_data
 def fetch_ticker_data(ticker_symbol, period):
@@ -32,17 +45,33 @@ def fetch_ticker_data(ticker_symbol, period):
         return None, None
 
 
-# Helper function to get ticker list with caching
+# Helper function to fit the Prophet model with caching
 @st.cache_data
-def get_ticker_list():
-    response = requests.get(
-        "https://dumbstockapi.com/stock?format=tickers-only&countries=US"
+def fit_prophet_model(
+    prophet_df,
+    growth,
+    seasonality_mode,
+    weekly,
+    monthly,
+    yearly,
+    holidays_country,
+    cap=None,
+):
+    model = Prophet(
+        growth=growth,
+        seasonality_mode=seasonality_mode,
+        weekly_seasonality=weekly,
+        yearly_seasonality=yearly,
+        daily_seasonality=False,
     )
-    if response.status_code == 200:
-        return response.json()
-    else:
-        st.error("Error fetching ticker list.")
-        return ["AAPL"]
+    if holidays_country != "None":
+        model.add_country_holidays(country_name=holidays_country)
+    if monthly:
+        model.add_seasonality(name="monthly", period=30.5, fourier_order=5)
+    if growth == "logistic" and cap is not None:
+        prophet_df["cap"] = cap
+    model.fit(prophet_df)
+    return model
 
 
 # Sidebar - Ticker selection
@@ -81,11 +110,8 @@ if ticker_df is not None and ticker_info is not None:
         "Forecasting Horizon (days)", min_value=1, max_value=365, value=90
     )
     growth_selection = st.sidebar.radio("Growth", options=["linear", "logistic"])
-    seasonality_selection = st.sidebar.radio(
-        "Seasonality Mode", options=["additive", "multiplicative"]
-    )
-
     # Additional parameters for logistic growth
+    cap_close = None
     if growth_selection == "logistic":
         st.sidebar.info(
             "Configure logistic growth saturation as a percentage of latest Close"
@@ -95,6 +121,9 @@ if ticker_df is not None and ticker_info is not None:
         )
         cap_close = cap * ticker_df["Close"].iloc[-1]
         ticker_df["cap"] = cap_close
+    seasonality_selection = st.sidebar.radio(
+        "Seasonality Mode", options=["additive", "multiplicative"]
+    )
 
     # Seasonality components
     st.sidebar.subheader("Seasonality Components")
@@ -108,30 +137,28 @@ if ticker_df is not None and ticker_info is not None:
         "Holiday Country", options=holiday_country_list
     )
 
+    # Prepare data for Prophet
+    prophet_df = ticker_df.rename(columns={"Date": "ds", "Close": "y"})
+    if growth_selection == "logistic" and cap_close is not None:
+        prophet_df["cap"] = cap_close
+
     # Forecasting
     st.header("Forecasting")
     with st.spinner("Fitting the model..."):
-        # Prepare data for Prophet
-        prophet_df = ticker_df.rename(columns={"Date": "ds", "Close": "y"})
-        model = Prophet(
+        model = fit_prophet_model(
+            prophet_df,
             growth=growth_selection,
             seasonality_mode=seasonality_selection,
-            weekly_seasonality=weekly_selection,
-            yearly_seasonality=yearly_selection,
-            daily_seasonality=False,
+            weekly=weekly_selection,
+            monthly=monthly_selection,
+            yearly=yearly_selection,
+            holidays_country=holiday_country_selection,
+            cap=cap_close,
         )
-
-        if holiday_country_selection != "None":
-            model.add_country_holidays(country_name=holiday_country_selection)
-        if monthly_selection:
-            model.add_seasonality(name="monthly", period=30.5, fourier_order=5)
-        if growth_selection == "logistic":
-            prophet_df["cap"] = cap_close
-        model.fit(prophet_df)
 
     with st.spinner("Generating forecast..."):
         future = model.make_future_dataframe(periods=horizon_selection)
-        if growth_selection == "logistic":
+        if growth_selection == "logistic" and cap_close is not None:
             future["cap"] = cap_close
         forecast = model.predict(future)
 
@@ -144,6 +171,5 @@ if ticker_df is not None and ticker_info is not None:
     st.subheader("Forecast Components")
     fig2 = plot_components_plotly(model, forecast)
     st.plotly_chart(fig2)
-
 else:
     st.warning("Please select a different ticker or time period.")
