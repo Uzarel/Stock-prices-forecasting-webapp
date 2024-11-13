@@ -3,6 +3,7 @@ import plotly.express as px
 import streamlit as st
 import yfinance as yf
 from prophet import Prophet
+import requests
 
 # Page configuration
 st.set_page_config(
@@ -13,15 +14,15 @@ st.title('Stock prices forecasting')
 
 st.sidebar.subheader('Ticker query parameters')
 # Ticker sidebar
-with open('ticker_symbols.txt', 'r') as fp:
-    ticker_list = fp.read().split('\n')
+response = requests.get("https://dumbstockapi.com/stock?format=tickers-only&countries=US")
+ticker_list = response.json()
 ticker_selection = st.sidebar.selectbox(label='Stock ticker', options=ticker_list, index=ticker_list.index('AAPL'))
 period_list = ['6mo', '1y', '2y', '5y', '10y', 'max']
 period_selection = st.sidebar.selectbox(label='Period', options=period_list, index=period_list.index('2y'))
 
 # Retrieving tickers data
-ticker_data = yf.Ticker(ticker_selection)
-ticker_df = ticker_data.history(period=period_selection)
+ticker = yf.Ticker(ticker_selection)
+ticker_df = ticker.history(period=period_selection)
 ticker_df = ticker_df.rename_axis('Date').reset_index()
 ticker_df['Date'] = ticker_df['Date'].dt.date
 
@@ -45,9 +46,9 @@ with open('holiday_countries.txt', 'r') as fp:
 holiday_country_selection = st.sidebar.selectbox(label="Holiday country", options=holiday_country_list)
 
 # Ticker information
-company_name = ticker_data.info['longName']
+company_name = ticker.info['longName']
 st.header(company_name)
-company_summary = ticker_data.info['longBusinessSummary']
+company_summary = ticker.info['longBusinessSummary']
 st.info(company_summary)
 
 st.header('Ticker data')
