@@ -4,6 +4,7 @@ import streamlit as st
 import yfinance as yf
 from prophet import Prophet
 import requests
+import holidays
 
 # Page configuration
 st.set_page_config(
@@ -68,9 +69,8 @@ if ticker_df is not None and ticker_info is not None:
         weekly_selection = st.checkbox('Weekly')
         monthly_selection = st.checkbox('Monthly', value=True)
         yearly_selection = st.checkbox('Yearly', value=True)
-    with open('holiday_countries.txt', 'r') as fp:
-        holiday_country_list = fp.read().split('\n')
-        holiday_country_list.insert(0, 'None')
+    holiday_country_list = sorted(holidays.list_supported_countries())
+    holiday_country_list.insert(0, 'None')
     holiday_country_selection = st.sidebar.selectbox(label="Holiday country", options=holiday_country_list)
 
     st.header('Forecasting')
