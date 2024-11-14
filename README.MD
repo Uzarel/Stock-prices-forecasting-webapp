@@ -14,7 +14,7 @@ You can choose one of the following two options to run the application: **Local 
 
    ```bash
    git clone https://github.com/Uzarel/Stock-prices-forecasting-webapp
-   cd stock-price-forecasting
+   cd Stock-prices-forecasting-webapp
    ```
 
 2. Create a virtual environment:
@@ -55,7 +55,7 @@ You can choose one of the following two options to run the application: **Local 
 
    ```bash
    git clone https://github.com/Uzarel/Stock-prices-forecasting-webapp
-   cd stock-price-forecasting
+   cd Stock-prices-forecasting-webapp
    ```
 
 2. Build the Docker image using the provided `Dockerfile`:
